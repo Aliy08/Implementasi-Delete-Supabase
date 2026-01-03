@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* === Warna dasar (mode terang) === */
+:root {
+  --background: #f8fafc; /* biru muda lembut */
+  --foreground: #0f172a; /* biru tua abu gelap */
+  --accent: #3b82f6; /* Tailwind blue-500 */
+  --glow: 0 0 15px rgba(59, 130, 246, 0.6); /* efek glow biru lembut */
+}
+
+/* === Warna dasar (mode gelap) === */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0f1f;
+    --foreground: #e2e8f0;
+    --accent: #60a5fa; /* Tailwind blue-400 */
+    --glow: 0 0 20px rgba(96, 165, 250, 0.8);
+  }
+}
+
+/* === Integrasi theme ke Tailwind === */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+/* === Style global body === */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* === Heading (glow biru lembut) === */
+h1, h2 {
+  color: var(--accent);
+  text-shadow: var(--glow);
+  font-weight: 700;
+}
+
+/* === Elemen list/card sederhana === */
+li {
+  background-color: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 8px;
+  transition: all 0.25s ease-in-out;
+}
+
+li:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* === Layout utama halaman === */
+main {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* === Garis pembatas glowing === */
+hr {
+  border: none;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(59, 130, 246, 0.5),
+    transparent
+  );
+  margin: 1.5rem 0;
+}
+
