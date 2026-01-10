@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { handleDeleteItem } from '../actions/deleteItem';
 import { handleAddItem } from '../actions/addItem';
+import { handleEditItem } from '../actions/editItem';
 
 type Item = {
   id: number;
@@ -25,6 +26,9 @@ export default function ListSection({
   const [loadingId, setLoadingId] = useState<number | null>(null);
 
   const [isAdding, setIsAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+
   const [formData, setFormData] = useState<{
     nama_barang: string;
     stock: string;
@@ -57,6 +61,8 @@ export default function ListSection({
   /* ================= ADD ================= */
   function startAdd() {
     setIsAdding(true);
+    setIsEditing(false);
+    setEditId(null);
     setOpenMenuId(null);
     setFormData({
       nama_barang: '',
@@ -67,19 +73,13 @@ export default function ListSection({
 
   function cancelAdd() {
     setIsAdding(false);
+    setIsEditing(false);
+    setEditId(null);
     setFormData({
       nama_barang: '',
       stock: '',
       harga: '',
     });
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
   }
 
   async function handleSaveAdd() {
@@ -103,6 +103,59 @@ export default function ListSection({
     cancelAdd();
   }
 
+  /* ================= EDIT ================= */
+  function startEdit(item: Item) {
+    setIsEditing(true);
+    setIsAdding(false);
+    setEditId(item.id);
+    setOpenMenuId(null);
+
+    setFormData({
+      nama_barang: item.nama_barang,
+      stock: String(item.stock),
+      harga: String(item.harga),
+    });
+  }
+
+  async function handleSaveEdit() {
+    if (!editId) return;
+
+    const result = await handleEditItem(tableName, editId, {
+      nama_barang: formData.nama_barang,
+      stock: Number(formData.stock),
+      harga: Number(formData.harga),
+    });
+
+    if (!result.success) {
+      alert('Gagal update data');
+      return;
+    }
+
+    setItems(prev =>
+      prev.map(item =>
+        item.id === editId
+          ? {
+              ...item,
+              nama_barang: formData.nama_barang,
+              stock: Number(formData.stock),
+              harga: Number(formData.harga),
+            }
+          : item
+      )
+    );
+
+    cancelAdd();
+  }
+
+  /* ================= FORM INPUT ================= */
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
   /* ================= UI ================= */
   return (
     <div className="flex flex-col bg-white/5 backdrop-blur-sm border border-blue-300/30 rounded-xl p-6 shadow-[0_0_15px_rgba(59,130,246,0.3)] w-full">
@@ -110,8 +163,8 @@ export default function ListSection({
         {title}
       </h2>
 
-      {/* ===== ADD FORM ===== */}
-      {isAdding && (
+      {/* ===== ADD / EDIT FORM ===== */}
+      {(isAdding || isEditing) && (
         <div className="border border-blue-300/30 rounded-lg p-4 mb-4 space-y-3">
           <div>
             <label className="block text-sm mb-1">Nama Barang</label>
@@ -120,7 +173,6 @@ export default function ListSection({
               value={formData.nama_barang}
               onChange={handleChange}
               className="w-full p-2 rounded bg-black/20"
-              placeholder="Contoh: Paracetamol"
             />
           </div>
 
@@ -132,7 +184,6 @@ export default function ListSection({
               value={formData.stock}
               onChange={handleChange}
               className="w-full p-2 rounded bg-black/20"
-              placeholder="Masukkan stock"
             />
           </div>
 
@@ -144,17 +195,26 @@ export default function ListSection({
               value={formData.harga}
               onChange={handleChange}
               className="w-full p-2 rounded bg-black/20"
-              placeholder="Masukkan harga"
             />
           </div>
 
           <div className="flex gap-2 pt-2">
-            <button
-              onClick={handleSaveAdd}
-              className="px-4 py-1 bg-green-600 rounded hover:bg-green-700"
-            >
-              Save
-            </button>
+            {isAdding ? (
+              <button
+                onClick={handleSaveAdd}
+                className="px-4 py-1 bg-green-600 rounded hover:bg-green-700"
+              >
+                Save
+              </button>
+            ) : (
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-1 bg-blue-600 rounded hover:bg-blue-700"
+              >
+                Update
+              </button>
+            )}
+
             <button
               onClick={cancelAdd}
               className="px-4 py-1 bg-gray-500 rounded hover:bg-gray-600"
@@ -189,6 +249,13 @@ export default function ListSection({
             {/* DROPDOWN */}
             {openMenuId === item.id && (
               <div className="absolute right-3 top-10 bg-black/80 border rounded shadow w-32 z-10">
+                <button
+                  onClick={() => startEdit(item)}
+                  className="block w-full text-left px-3 py-2 hover:bg-white/10"
+                >
+                  Edit
+                </button>
+
                 <button
                   onClick={startAdd}
                   className="block w-full text-left px-3 py-2 hover:bg-white/10"

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 
+/* ================= DELETE ================= */
 export async function deleteItem(
   tableName: string,
   id: number
@@ -14,6 +15,7 @@ export async function deleteItem(
   }
 }
 
+/* ================= ADD ================= */
 export async function addItem(
   tableName: string,
   data: {
@@ -25,14 +27,40 @@ export async function addItem(
   const { data: insertedData, error } = await supabase
     .from(tableName)
     .insert([data])
-    .select()      // ⬅️ INI KUNCI NYA
-    .single();     // ⬅️ karena cuma 1 item
-
-  console.log("INSERT RESULT:", insertedData, error);
+    .select()
+    .single(); // karena cuma 1 row
 
   if (error) {
     throw error;
   }
 
   return insertedData;
+}
+
+/* ================= EDIT / UPDATE ================= */
+export async function editItem(
+  tableName: string,
+  id: number,
+  data: {
+    nama_barang: string;
+    stock: number;
+    harga: number;
+  }
+) {
+  const { data: updatedData, error } = await supabase
+    .from(tableName)
+    .update({
+      nama_barang: data.nama_barang,
+      stock: data.stock,
+      harga: data.harga,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return updatedData;
 }
