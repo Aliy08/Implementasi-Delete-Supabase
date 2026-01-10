@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { handleDeleteItem } from '../actions/deleteItem';
+import { handleAddItem } from '../actions/addItem';
 
 type Item = {
   id: number;
-  nama: string;
   nama_barang: string;
   stock: number;
   harga: number;
@@ -22,15 +22,21 @@ export default function ListSection({
 }) {
   const [items, setItems] = useState<Item[]>(initialData);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-  const [editId, setEditId] = useState<number | null>(null);
   const [loadingId, setLoadingId] = useState<number | null>(null);
 
-  const [formData, setFormData] = useState<Partial<Item>>({});
+  const [isAdding, setIsAdding] = useState(false);
+  const [formData, setFormData] = useState<{
+    nama_barang: string;
+    stock: string;
+    harga: string;
+  }>({
+    nama_barang: '',
+    stock: '',
+    harga: '',
+  });
 
   /* ================= DELETE ================= */
   async function handleDelete(id: number) {
-    alert("TOMBOL DELETE DIKLIK");
-    
     const confirmDelete = confirm('Yakin ingin menghapus item ini?');
     if (!confirmDelete) return;
 
@@ -48,47 +54,53 @@ export default function ListSection({
     setLoadingId(null);
   }
 
-  
-
-  /* ================= EDIT ================= */
-  function startEdit(item: Item) {
-    setEditId(item.id);
-    setFormData(item);
+  /* ================= ADD ================= */
+  function startAdd() {
+    setIsAdding(true);
     setOpenMenuId(null);
+    setFormData({
+      nama_barang: '',
+      stock: '',
+      harga: '',
+    });
   }
 
-  function cancelEdit() {
-    setEditId(null);
-    setFormData({});
+  function cancelAdd() {
+    setIsAdding(false);
+    setFormData({
+      nama_barang: '',
+      stock: '',
+      harga: '',
+    });
   }
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]:
-        name === 'stock' || name === 'harga'
-          ? Number(value)
-          : value,
+      [name]: value,
     }));
   }
 
-  function handleSave() {
-    // 🔜 NANTI: sambungkan ke Supabase (UPDATE)
-    console.log('SAVE DATA:', formData);
+  async function handleSaveAdd() {
+    if (!formData.nama_barang || !formData.stock || !formData.harga) {
+      alert('Semua field wajib diisi');
+      return;
+    }
 
-    setItems(prev =>
-      prev.map(item =>
-        item.id === editId
-          ? { ...item, ...(formData as Item) }
-          : item
-      )
-    );
+    const result = await handleAddItem(tableName, {
+      nama_barang: formData.nama_barang,
+      stock: Number(formData.stock),
+      harga: Number(formData.harga),
+    });
 
-    setEditId(null);
-    setFormData({});
+    if (!result.success || !result.data) {
+      alert('Gagal menambah item');
+      return;
+    }
+
+    setItems(prev => [...prev, result.data]);
+    cancelAdd();
   }
 
   /* ================= UI ================= */
@@ -98,95 +110,87 @@ export default function ListSection({
         {title}
       </h2>
 
+      {/* ===== ADD FORM ===== */}
+      {isAdding && (
+        <div className="border border-blue-300/30 rounded-lg p-4 mb-4 space-y-3">
+          <div>
+            <label className="block text-sm mb-1">Nama Barang</label>
+            <input
+              name="nama_barang"
+              value={formData.nama_barang}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-black/20"
+              placeholder="Contoh: Paracetamol"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Stock</label>
+            <input
+              name="stock"
+              type="number"
+              value={formData.stock}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-black/20"
+              placeholder="Masukkan stock"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Harga</label>
+            <input
+              name="harga"
+              type="number"
+              value={formData.harga}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-black/20"
+              placeholder="Masukkan harga"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleSaveAdd}
+              className="px-4 py-1 bg-green-600 rounded hover:bg-green-700"
+            >
+              Save
+            </button>
+            <button
+              onClick={cancelAdd}
+              className="px-4 py-1 bg-gray-500 rounded hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== LIST ===== */}
       <ul className="space-y-4">
         {items.map(item => (
           <li
             key={item.id}
             className="relative border border-blue-300/30 rounded-lg p-4 hover:bg-blue-50/10 transition"
           >
-            {/* ===== CONTENT ===== */}
-            {editId === item.id ? (
-              <div className="space-y-2">
-                <input
-                  name="nama"
-                  value={formData.nama ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 rounded bg-black/20"
-                  placeholder="Nama"
-                />
-                <input
-                  name="nama_barang"
-                  value={formData.nama_barang ?? ''}
-                  onChange={handleChange}
-                  className="w-full p-2 rounded bg-black/20"
-                  placeholder="Nama Barang"
-                />
-                <input
-                  name="stock"
-                  type="number"
-                  value={formData.stock ?? 0}
-                  onChange={handleChange}
-                  className="w-full p-2 rounded bg-black/20"
-                  placeholder="Stock"
-                />
-                <input
-                  name="harga"
-                  type="number"
-                  value={formData.harga ?? 0}
-                  onChange={handleChange}
-                  className="w-full p-2 rounded bg-black/20"
-                  placeholder="Harga"
-                />
+            <h3 className="font-bold text-lg">{item.nama_barang}</h3>
+            <p>Stock: {item.stock}</p>
+            <p>Harga: Rp{item.harga.toLocaleString('id-ID')}</p>
 
-                {/* SAVE / CANCEL */}
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-1 bg-green-600 rounded hover:bg-green-700"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className="px-4 py-1 bg-gray-500 rounded hover:bg-gray-600"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <h3 className="font-bold text-lg">{item.nama}</h3>
-                <p>Nama Barang: {item.nama_barang}</p>
-                <p>Stock: {item.stock}</p>
-                <p>Harga: Rp{item.harga.toLocaleString('id-ID')}</p>
-              </>
-            )}
-
-            {/* ===== TITIK 3 ===== */}
+            {/* TITIK 3 */}
             <button
               onClick={() =>
-                setOpenMenuId(
-                  openMenuId === item.id ? null : item.id
-                )
+                setOpenMenuId(openMenuId === item.id ? null : item.id)
               }
               className="absolute top-3 right-3"
             >
               {loadingId === item.id ? '...' : '⋮'}
             </button>
 
-            {/* ===== DROPDOWN ===== */}
+            {/* DROPDOWN */}
             {openMenuId === item.id && (
               <div className="absolute right-3 top-10 bg-black/80 border rounded shadow w-32 z-10">
                 <button
-                  onClick={() => startEdit(item)}
-                  className="block w-full text-left px-3 py-2 hover:bg-white/10"
-                >
-                  Update
-                </button>
-
-                <button
-                  onClick={() => alert('Add nanti ya 😄')}
+                  onClick={startAdd}
                   className="block w-full text-left px-3 py-2 hover:bg-white/10"
                 >
                   Add
