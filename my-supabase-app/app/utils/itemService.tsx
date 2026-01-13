@@ -28,7 +28,7 @@ export async function addItem(
     .from(tableName)
     .insert([data])
     .select()
-    .single(); // karena cuma 1 row
+    .single(); 
 
   if (error) {
     throw error;
